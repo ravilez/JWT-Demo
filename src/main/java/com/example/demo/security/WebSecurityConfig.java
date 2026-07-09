@@ -74,7 +74,8 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:4200",
                 "http://localhost:8000",
-                "http://192.168.1.111:8000"
+                "http://192.168.1.111:8000",
+                "http://192.168.1.111:30080"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
