@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jwt-demo
+  namespace: jwt-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jwt-demo
+  template:
+    metadata:
+      labels:
+        app: jwt-demo
+    spec:
+      containers:
+        - name: jwt-demo
+          image: jwt-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-demo-secret
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-demo-secret
+                  key: JWT_EXPIRATION
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
