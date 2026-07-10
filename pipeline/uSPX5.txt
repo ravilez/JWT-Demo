@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'linux-builder' }
+
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk-arm64'
+        PATH = "${JAVA_HOME}/bin:${PATH}"
+    }
+
+    stages {
+        stage('Checkout or Update') {
+            steps {
+                script {
+                    if (fileExists('JWT-Demo/.git')) {
+                        echo 'Repository exists, pulling latest changes'
+
+                        dir('JWT-Demo') {
+                            sh '''
+                                git fetch
+                                git pull origin main
+                            '''
+                        }
+                    } else {
+                        echo 'Repository does not exist, cloning'
+
+                        sh '''
+                            git clone https://github.com/ravilez/JWT-Demo.git
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('JWT-Demo') {
+                    sh '''
+                        pwd
+                        java -version
+                        mvn clean package
+                    '''
+                }
+            }
+        }
+    }
+}
