@@ -1,0 +1,67 @@
+
+pipeline {
+    agent { label 'linux-builder' }
+
+   environment {
+        JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk-arm64'
+        PATH = "${JAVA_HOME}/bin:${PATH}"
+        IMAGE_NAME = 'ravilez/jwt-demo'
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                script {
+                    if (fileExists('JWT-Demo/.git')) {
+                        dir('JWT-Demo') {
+                            sh 'git pull origin main'
+                        }
+                    } else {
+                        sh 'git clone https://github.com/ravilez/JWT-Demo.git'
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('JWT-Demo') {
+                    sh 'mvn clean package'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir('JWT-Demo') {
+                    sh """
+                        sudo docker build \
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                        -t ${IMAGE_NAME}:latest .
+                    """
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                sh """
+                    echo r1card0123 | sudo docker login -u ravilez --password-stdin
+                    sudo docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    sudo docker push ${IMAGE_NAME}:latest
+                    sudo docker logout
+                """
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                dir('JWT-Demo/k8s') {
+                    sh 'sudo kubectl apply -k .'
+                }
+            }
+        }
+    }
+}
