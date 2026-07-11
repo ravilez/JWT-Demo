@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: jwt-demo
-          image: jwt-demo:latest
-          imagePullPolicy: IfNotPresent
+          image: ravilez/jwt-demo:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
