@@ -1,5 +1,6 @@
 package com.example.demo.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -10,6 +11,9 @@ import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -32,8 +36,16 @@ public class JwtUtil {
     }
 
     // Generate JWT token.
-    public String generateToken(String username) {
+    public String generateToken(String username, String email, String tenantId) {
+    	
+    	// 1. Prepare custom payload claims
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("email", email);
+        extraClaims.put("tenantId", tenantId);
+
+        // 3. Build and compress the token
         return Jwts.builder()
+                .claims(extraClaims)  
                 .subject(username)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
@@ -43,12 +55,35 @@ public class JwtUtil {
 
     // Get username from JWT token.
     public String getUsernameFromToken(String token) {
-        return Jwts.parser()
+    	Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+                .getPayload();
+    	
+    	return claims.getSubject();
+    }
+
+    // Get email from JWT token.
+    public String getEmailFromToken(String token) {
+    	Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    	
+    	return claims.get("email", String.class);
+    }
+
+    // Get tenantId from JWT token.
+    public String getTenantIdFromToken(String token) {
+    	Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    	
+    	return claims.get("tenantId", String.class);
     }
 
     // Validate JWT token.

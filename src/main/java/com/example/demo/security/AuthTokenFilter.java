@@ -1,5 +1,6 @@
 package com.example.demo.security;
 
+import com.example.demo.model.User;
 import com.example.demo.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,9 +25,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtils;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -37,22 +35,37 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUsernameFromToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                String email = jwtUtils.getEmailFromToken(jwt);
+                String tenantId = jwtUtils.getTenantIdFromToken(jwt);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+                if (username != null && tenantId != null) {
+                    // 2. Hydrate Principal and set Spring Security Context
+                    CustomUserPrincipal principal = new CustomUserPrincipal(username, email, tenantId);
+                    UsernamePasswordAuthenticationToken authentication = 
+                            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+                    
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    // 3. Hydrate Tenant Context for your dynamic Hibernate connection provider
+                    //TenantContext.setCurrentTenant(tenantId);
+                }            
+            
             }
         } catch (Exception e) {
             LOGGER.error("Cannot set user authentication", e);
+            // Token invalid, expired, or tampered with. Fail silently to let SecurityConfig handle anonymous access denials.
+            SecurityContextHolder.clearContext();
         }
 
-        filterChain.doFilter(request, response);
+        try {
+        	filterChain.doFilter(request, response);
+        } finally {
+            // Crucial: Wipe both contexts to completely eliminate risk of thread-pool data cross-contamination
+            //TenantContext.clear();
+            SecurityContextHolder.clearContext();
+        }    
     }
 
     private String parseJwt(HttpServletRequest request) {

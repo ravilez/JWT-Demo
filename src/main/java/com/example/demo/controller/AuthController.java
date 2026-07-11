@@ -1,13 +1,12 @@
 package com.example.demo.controller;
 
+
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtil;
+import com.example.demo.service.CustomUserDetailsService;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     @Autowired
-    AuthenticationManager authenticationManager;
-
-    @Autowired
     UserRepository userRepository;
 
     @Autowired
@@ -29,18 +25,19 @@ public class AuthController {
 
     @Autowired
     JwtUtil jwtUtils;
+    
+    @Autowired
+    CustomUserDetailsService userService;
 
     @PostMapping("/signin")
-    public String authenticateUser(@RequestBody User user) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
-                        user.getPassword()
-                )
-        );
+    public String authenticateUser(@RequestBody User request) {
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token =  jwtUtils.generateToken(userDetails.getUsername());
+    	
+    	// 1. Authenticate user credentials against your DB
+        User user = userService.authenticate(request.getEmail(), request.getPassword());
+        
+        // Credentials are already validated by userService.authenticate.
+        String token = jwtUtils.generateToken(user.getUsername(), user.getEmail(), user.getTenantId());
         System.out.println("Generated JWT Token: " + token); // Debugging line
         return token;
     }
@@ -54,7 +51,9 @@ public class AuthController {
         User newUser = new User(
                 null,
                 user.getUsername(),
-                encoder.encode(user.getPassword())
+                user.getEmail(),
+                encoder.encode(user.getPassword()),
+                user.getTenantId()
         );
 
         userRepository.save(newUser);

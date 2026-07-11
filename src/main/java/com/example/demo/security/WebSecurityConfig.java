@@ -1,6 +1,5 @@
 package com.example.demo.security;
 
-import com.example.demo.service.CustomUserDetailsService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -19,9 +18,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class WebSecurityConfig {
-
-    @Autowired
-    CustomUserDetailsService userDetailsService;
 
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
