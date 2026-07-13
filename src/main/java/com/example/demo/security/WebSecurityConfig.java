@@ -71,6 +71,10 @@ public class WebSecurityConfig {
                 "http://localhost:4200",
                 "http://localhost:8000",
                 "http://192.168.1.111:8000",
+                "http://192.168.1.111:4200",
+                "http://microspx.ddns.net:4200",
+                "http://microspx.ddns.net:8000",
+                "http://microspx.ddns.net:30080",
                 "http://192.168.1.111:30080"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
